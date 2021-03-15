@@ -11,9 +11,10 @@ import tensorflow as tf
 from data_augmentation import preprocess_data
 from encoding import LabelEncoder
 from utility import resize_img_keeping_ar
+import numpy as np
 
 MAXIMUM_OBJECTS = 100
-INPUT_RESOLUTION = {'height': 640,
+INPUT_RESOLUTION = {'height': 480,
                     'width': 640}
 keras = tf.keras
 
@@ -35,7 +36,8 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
                         dataset_dir='./',
                         preprocess_data=preprocess_data,
                         batch_size=8,
-                        label_encoder=LabelEncoder()):
+                        label_encoder=LabelEncoder(),
+                        config=None):
     """
 
     :param mode:
@@ -104,25 +106,27 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
             ], axis=-1
         )
 
-        image = tf.squeeze(
-            tf.image.draw_bounding_boxes(
-            tf.expand_dims(tf.cast(image, tf.float32), axis=0), tf.expand_dims(bbox, axis=0)
-        ), axis=0)
+        # image = tf.squeeze(
+        #     tf.image.draw_bounding_boxes(
+        #         tf.expand_dims(tf.cast(image, tf.float32), axis=0), tf.expand_dims(bbox, axis=0)
+        #     ), axis=0)
 
-        image, bbox = resize_img_keeping_ar(image, bbox, target_height=INPUT_RESOLUTION['height'],
+        image, size_ratio = resize_img_keeping_ar(image, target_height=INPUT_RESOLUTION['height'],
                                                   target_width=INPUT_RESOLUTION['width'])
-
 
         image_id = features['image/object/class/text']
         image_name = features['image/filename']
         image_height = features['image/height']
         image_width = features['image/width']
 
+        size_ratio = tf.stack([features['image/height'], features['image/width']])
+        size_ratio = tf.cast(size_ratio, tf.float32)
+        size_ratio = tf.unstack(size_ratio, axis=-1)
+        size_ratio = tf.stack([size_ratio[0], size_ratio[1], size_ratio[0], size_ratio[1]], axis=-1)
 
+        new_scale = np.asarray([INPUT_RESOLUTION['height'], INPUT_RESOLUTION['width'], INPUT_RESOLUTION['height'], INPUT_RESOLUTION['width']]).astype(np.float32)
+        bbox *= size_ratio / new_scale
 
-        # org_size = [features['image/height'], features['image/width'], features['image/height'],
-        #             features['image/width']]
-        # bbox *= tf.cast(size_ratio, tf.float32) #/ [INPUT_RESOLUTION['height'], INPUT_RESOLUTION['width'], INPUT_RESOLUTION['height'], INPUT_RESOLUTION['width']]
 
         """
         Cause number of of bounding boxes in each img is variable, so we need to pad it to be a fixed size tensor

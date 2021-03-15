@@ -117,7 +117,7 @@ def visualize_detections(
 """
 
 """
-def resize_img_keeping_ar(img_tf, bbox, target_height, target_width):
+def resize_img_keeping_ar(img_tf, target_height, target_width):
     """
 
     :param img_tf:
@@ -133,7 +133,6 @@ def resize_img_keeping_ar(img_tf, bbox, target_height, target_width):
 
     size_ratio = ratio * tf.cast(org_img_shape, dtype=tf.float64)
 
-    bbox *= tf.cast(size_ratio, tf.float32)
     img_tf = tf.squeeze(
         tf.image.resize_bilinear(
             tf.expand_dims(img_tf, axis=0), size=tf.cast(size_ratio, tf.int32)
@@ -148,4 +147,4 @@ def resize_img_keeping_ar(img_tf, bbox, target_height, target_width):
     img_tf = tf.pad(img_tf, [[0, pad_number[0]], [0, pad_number[1]], [0, 0]])
 
 
-    return tf.cast(img_tf, dtype=tf.uint8), bbox
+    return tf.cast(img_tf, dtype=tf.uint8), size_ratio
