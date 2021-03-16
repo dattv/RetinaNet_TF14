@@ -106,11 +106,6 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
             ], axis=-1
         )
 
-        # image = tf.squeeze(
-        #     tf.image.draw_bounding_boxes(
-        #         tf.expand_dims(tf.cast(image, tf.float32), axis=0), tf.expand_dims(bbox, axis=0)
-        #     ), axis=0)
-
         image, size_ratio = resize_img_keeping_ar(image, target_height=INPUT_RESOLUTION['height'],
                                                   target_width=INPUT_RESOLUTION['width'])
 
@@ -119,14 +114,8 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
         image_height = features['image/height']
         image_width = features['image/width']
 
-        size_ratio = tf.stack([features['image/height'], features['image/width']])
-        size_ratio = tf.cast(size_ratio, tf.float32)
         size_ratio = tf.unstack(size_ratio, axis=-1)
         size_ratio = tf.stack([size_ratio[0], size_ratio[1], size_ratio[0], size_ratio[1]], axis=-1)
-
-        new_scale = np.asarray([INPUT_RESOLUTION['height'], INPUT_RESOLUTION['width'], INPUT_RESOLUTION['height'], INPUT_RESOLUTION['width']]).astype(np.float32)
-        bbox *= size_ratio / new_scale
-
 
         """
         Cause number of of bounding boxes in each img is variable, so we need to pad it to be a fixed size tensor
@@ -150,6 +139,7 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
             'image_id': image_id,
             'filename': image_name,
             'source_id': source_id,
+            'size_ratio': size_ratio,
             'objects': {
                 'bbox': bbox,
                 'n_object': object_num,

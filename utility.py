@@ -125,13 +125,17 @@ def resize_img_keeping_ar(img_tf, target_height, target_width):
     :param target_width:
     :return:
     """
-    new_img_shape = [target_height, target_width]
+    new_img_shape = tf.convert_to_tensor([target_height, target_width], dtype=tf.int32)
 
-    org_img_shape = tf.shape(img_tf)[0:2]
+    org_img_shape = tf.shape(img_tf)
+    org_img_shape = tf.unstack(org_img_shape, axis=-1)
+    org_img_shape = tf.stack([org_img_shape[0], org_img_shape[1]], axis=-1)
 
-    ratio = tf.reduce_min(tf.divide(new_img_shape, org_img_shape))
+    ratio = tf.reduce_min(
+        tf.cast(new_img_shape, dtype=tf.float32) / tf.cast(org_img_shape, tf.float32)
+    )
 
-    size_ratio = ratio * tf.cast(org_img_shape, dtype=tf.float64)
+    size_ratio = ratio * tf.cast(org_img_shape, tf.float32)
 
     img_tf = tf.squeeze(
         tf.image.resize_bilinear(
