@@ -13,7 +13,7 @@ from utility import convert_to_corners
 keras = tf.keras
 
 
-def get_backbone(model_name='resnet50'):
+def get_backbone(model_name='resnet50', input_shape=[640, 640, 3]):
     """
 
     :param model_name:
@@ -22,21 +22,25 @@ def get_backbone(model_name='resnet50'):
     if model_name.lower() == 'resnet50':
         """Builds ResNet50 with pre-trained imagenet weights"""
         backbone = keras.applications.ResNet50(
-            include_top=False, input_shape=[None, None, 3]
+            include_top=False, input_shape=input_shape
         )
+
+        c3_output, c4_output, c5_output = [
+            backbone.get_layer(layer_name).output
+            for layer_name in ["conv3_block4_out", "conv4_block6_out", "conv5_block3_out"]
+        ]
     else:
         """Builds mobilenetV1 with pre-trained imagenet weights"""
         backbone = keras.applications.MobileNet(
-            include_top=False, input_shape=[None, None, 3]
+            include_top=False, input_shape=input_shape
         )
+        c3_output, c4_output, c5_output = [
+            backbone.get_layer(layer_name).output
+            for layer_name in ["conv_pw_5_relu", "conv_pw_11_relu", "conv_pw_13_relu"]
+        ]
 
-    c3_output, c4_output, c5_output = [
-        backbone.get_layer(layer_name).output
-        for layer_name in ["conv3_block4_out", "conv4_block6_out", "conv5_block3_out"]
-    ]
-    return keras.Model(
-        inputs=[backbone.inputs], outputs=[c3_output, c4_output, c5_output]
-    )
+
+    return [backbone.inputs], [c3_output, c4_output, c5_output]
 
 
 class FeaturePyramid(keras.layers.Layer):
