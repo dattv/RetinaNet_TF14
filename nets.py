@@ -40,7 +40,7 @@ def get_backbone(model_name='resnet50', input_shape=[640, 640, 3]):
         ]
 
 
-    return [backbone.inputs], [c3_output, c4_output, c5_output]
+    return c3_output, c4_output, c5_output
 
 
 class FeaturePyramid(keras.layers.Layer):
@@ -109,6 +109,15 @@ def build_head(output_filters, bias_init):
         )
     )
     return head
+
+def RetinaNet_fn(input):
+    """
+
+    :param input:
+    :return:
+    """
+
+
 
 
 class RetinaNet(keras.Model):
