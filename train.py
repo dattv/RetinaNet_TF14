@@ -5,13 +5,15 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import os
+
 import tensorflow as tf
 import numpy as np
-from nets import RetinaNet
-from nets import get_backbone
+from nets import RetinaNet_fn
 from dataset import data_input_pipeline
 from data_augmentation import preprocess_data
 from encoding import LabelEncoder
+from losser import RetinaNetLoss
 import yaml
 
 def train(cfg=None):
@@ -34,16 +36,40 @@ def train(cfg=None):
         dataset_dir=dataset_dir,
         preprocess_data=preprocess_data,
         batch_size=train_config['BATCH_SIZE'],
-        label_encoder=LabelEncoder
+        label_encoder=LabelEncoder,
+        config=cfg
     )
 
-    input_tensor, output_tensor = get_backbone(model_config['BACKBONE'], input_shape=[640, 640, 3])
-
-    model = RetinaNet(
-        num_classes=1,
-        backbone=back_bone
+    retina_model = RetinaNet_fn(
+        input_shape=[model_config['INPUT_HEIGHT'], model_config['INPUT_WIDTH'], 3],
+        back_bone=model_config['BACKBONE'], num_classes=90, training=True
     )
-    print(model.summary())
+
+    print(retina_model.summary())
+    retina_model.save('./{}.h5'.format(retina_model.name))
+
+    loss_fn = RetinaNetLoss(90)
+
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9)
+    retina_model.compile(loss=loss_fn, optimizer=optimizer)
+
+    callbacks_list = [
+        tf.keras.callbacks.ModelCheckpoint(
+            filepath=os.path.join(cfg['OUTPUT_DIR'], "weights" + "_epoch_{epoch}"),
+            monitor="loss",
+            save_best_only=False,
+            save_weights_only=True,
+            verbose=1,
+        )
+    ]
+
+    retina_model.fit(
+        train_data_generator,
+        epochs=10,
+        callbacks=callbacks_list,
+        verbose=1,
+        steps_per_epoch=1000
+    )
 
 
 if __name__ == '__main__':

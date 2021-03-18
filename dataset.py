@@ -11,11 +11,12 @@ import tensorflow as tf
 from data_augmentation import preprocess_data
 from encoding import LabelEncoder
 from utility import resize_img_keeping_ar
-import numpy as np
+from encoding import wraper_encode
+from anchor_generator import AnchorBox
 
 MAXIMUM_OBJECTS = 100
-INPUT_RESOLUTION = {'height': 480,
-                    'width': 640}
+INPUT_RESOLUTION = {'height': 224,
+                    'width': 224}
 keras = tf.keras
 
 
@@ -116,11 +117,11 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
 
         size_ratio = tf.unstack(size_ratio, axis=-1)
         size_ratio = tf.stack([size_ratio[0], size_ratio[1], size_ratio[0], size_ratio[1]], axis=-1)
+        bbox *= size_ratio
 
         """
         Cause number of of bounding boxes in each img is variable, so we need to pad it to be a fixed size tensor
         """
-
         label = tf.sparse.to_dense(features['image/object/class/label'])
         object_num = tf.shape(bbox)[0]
         paddings = [[0, MAXIMUM_OBJECTS - object_num], [0, 0]]
@@ -159,10 +160,13 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
         dataset = dataset.map(preprocess_data, num_parallel_calls=autotune)
 
     if mode == tf.estimator.ModeKeys.TRAIN:
+        dataset = dataset.map(
+            wraper_encode(config), num_parallel_calls=autotune
+        )
         dataset = dataset.batch(batch_size)
         dataset = dataset.shuffle(8 * batch_size)
         # dataset = dataset.map(
-        #     label_encoder.encode_batch, num_parallel_calls=autotune
+        #     encode_batch, num_parallel_calls=autotune
         # )
         # dataset = dataset.apply(tf.data.experimental.ignore_errors())
         dataset = dataset.prefetch(autotune)

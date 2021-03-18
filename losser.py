@@ -44,8 +44,18 @@ class RetinaNetClassificationLoss(tf.keras.losses.Loss):
             labels=y_true, logits=y_pred
         )
         probs = tf.nn.sigmoid(y_pred)
-        alpha = tf.where(tf.equal(y_true, 1.0), self._alpha, (1.0 - self._alpha))
-        pt = tf.where(tf.equal(y_true, 1.0), probs, 1 - probs)
+
+        alpha = tf.where(
+            tf.equal(y_true, tf.ones_like(y_true)),
+            self._alpha * tf.ones_like(y_true),
+            (1.0 - self._alpha)*tf.ones_like(y_true)
+        )
+
+        pt = tf.where(
+            tf.equal(y_true, tf.ones_like(y_true)),
+            probs * tf.ones_like(y_true),
+            (1.0 - probs) * tf.ones_like(y_true)
+        )
         loss = alpha * tf.pow(1.0 - pt, self._gamma) * cross_entropy
         return tf.reduce_sum(loss, axis=-1)
 
@@ -71,10 +81,12 @@ class RetinaNetLoss(tf.keras.losses.Loss):
         cls_predictions = y_pred[:, :, 4:]
         positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
         ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
+
         clf_loss = self._clf_loss(cls_labels, cls_predictions)
         box_loss = self._box_loss(box_labels, box_predictions)
-        clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
-        box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
+
+        clf_loss = tf.where(tf.equal(ignore_mask, tf.ones_like(ignore_mask)), tf.zeros_like(ignore_mask), clf_loss)
+        box_loss = tf.where(tf.equal(positive_mask, tf.ones_like(positive_mask)), box_loss, tf.zeros_like(positive_mask))
         normalizer = tf.reduce_sum(positive_mask, axis=-1)
         clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
         box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)

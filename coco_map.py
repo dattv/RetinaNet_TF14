@@ -195,5 +195,3 @@ for i, key in enumerate(keys):
 
 
     COLOR_MAP[key] = (first, second, third)
-
-print('dd')

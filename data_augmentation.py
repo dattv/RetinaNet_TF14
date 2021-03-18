@@ -108,24 +108,15 @@ def preprocess_data(sample):
       class_id: An tensor representing the class id of the objects, having
         shape `(num_objects,)`.
     """
-    image = sample["image"]
+
     bbox = swap_xy(sample["objects"]["bbox"])
     class_id = tf.cast(sample["objects"]["label"], dtype=tf.int32)
 
-    image, bbox = random_flip_horizontal(image, bbox)
-    image, image_shape, _ = resize_and_pad_image(image)
+    sample["image"], bbox = random_flip_horizontal(sample["image"], bbox)
 
-    bbox = tf.stack(
-        [
-            bbox[:, 0] * image_shape[1],
-            bbox[:, 1] * image_shape[0],
-            bbox[:, 2] * image_shape[1],
-            bbox[:, 3] * image_shape[0],
-        ],
-        axis=-1,
-    )
     bbox = convert_to_xywh(bbox)
 
-    sample["image"] = image,
     sample["objects"]["bbox"] = bbox
+    sample["objects"]["label"] = class_id
+
     return sample

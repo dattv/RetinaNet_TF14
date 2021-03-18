@@ -8,7 +8,7 @@ from __future__ import print_function
 import tensorflow as tf
 
 
-class AnchorBox:
+class AnchorBox(object):
     """Generates anchor boxes.
 
     This class has operations to generate anchor boxes for feature maps at
