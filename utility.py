@@ -57,6 +57,17 @@ def convert_to_corners(boxes):
         axis=-1,
     )
 
+def convert_to_corners_np(boxes):
+    """
+
+    :param boxes:
+    :return:
+    """
+    return np.concatenate(
+        [boxes[..., :2] - boxes[..., 2:] / 2.0, boxes[..., :2] + boxes[..., 2:] / 2.0],
+        axis=-1,
+    )
+
 
 def compute_iou(boxes1, boxes2):
     """Computes pairwise IOU matrix for given two sets of boxes

@@ -234,10 +234,11 @@ def wraper_encode(config):
         gt_boxes = sample["objects"]["bbox"]
         cls_ids = sample["objects"]["label"]
 
-        label = encode_sample(_box_variance, anchor_boxes, gt_boxes, cls_ids)
+        n_object = sample["objects"]["n_object"]
 
-        # batch_images = tf.keras.applications.resnet50.preprocess_input(image)
-        return image, label
+        label = encode_sample(_box_variance, anchor_boxes, gt_boxes, cls_ids)
+        # batch_images = tf.keras.applications.mobilenet.preprocess_input(image)
+        return image, label#, sample
 
 
     return encode

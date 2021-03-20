@@ -6,6 +6,9 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from anchor_generator import AnchorBox
+from utility import convert_to_corners_np
+import numpy as np
 
 
 class DecodePredictions(tf.keras.layers.Layer):
@@ -74,3 +77,35 @@ class DecodePredictions(tf.keras.layers.Layer):
             self.confidence_threshold,
             clip_boxes=False,
         )
+
+class wraper_decode_np(object):
+    """
+
+    :return:
+    """
+    def __init__(self, config):
+        target_height = config['MODEL']['INPUT_HEIGHT']
+        target_width = config['MODEL']['INPUT_WIDTH']
+
+        anchor_generator = AnchorBox(mode='numpy')
+
+        self.anchor_boxes = anchor_generator.get_anchors(target_height, target_width)
+
+        self._box_variance = np.asarray(
+            [0.1, 0.1, 0.2, 0.2], dtype=np.float32
+        )
+
+    def _decode_box_predictions(self, index, box_predictions):
+
+        new_anchor_boxes = self.anchor_boxes[index]
+        boxes = box_predictions * self._box_variance
+        boxes = np.concatenate(
+            [
+                boxes[..., :2] * new_anchor_boxes[..., 2:] + new_anchor_boxes[..., :2],
+                np.exp(boxes[..., 2:]).astype(np.float32) * new_anchor_boxes[..., 2:],
+            ],
+            axis=-1,
+        )
+        boxes_transformed = convert_to_corners_np(boxes)
+
+        return boxes_transformed

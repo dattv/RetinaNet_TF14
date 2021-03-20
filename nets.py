@@ -10,6 +10,7 @@ import tensorflow as tf
 from encoding import AnchorBox
 from utility import convert_to_corners
 
+from mobilenet import MobileNet
 keras = tf.keras
 
 def RetinaNet_fn(input_shape=[224, 224, 3], back_bone='resnet50', num_classes=90, training=True):
@@ -35,6 +36,8 @@ def RetinaNet_fn(input_shape=[224, 224, 3], back_bone='resnet50', num_classes=90
             include_top=False, input_shape=input_shape
         )
         layer_names = ["conv_pw_5_relu", "conv_pw_11_relu", "conv_pw_13_relu"]
+
+    # backbone = MobileNet(shape=(480, 640, 3), batch_size=2, num_classes=1000, include_top=False)
 
     for layer in backbone.layers:
         layer.trainable = training
@@ -75,11 +78,12 @@ def RetinaNet_fn(input_shape=[224, 224, 3], back_bone='resnet50', num_classes=90
     cls_outputs = []
     box_outputs = []
     for feature in FPN:
-
-        box_outputs.append(tf.keras.layers.Reshape(target_shape=[-1, 4])(
-            build_head_fn(feature, 9 * num_classes, prior_probability)))
+        box_outputs.append(
+            tf.keras.layers.Reshape(target_shape=[-1, 4])(
+            build_head_fn(feature, 9 * 4, prior_probability)))
         cls_outputs.append(
-            tf.keras.layers.Reshape(target_shape=[-1, num_classes])(build_head_fn(feature, 9 * 4, "zeros"))
+            tf.keras.layers.Reshape(target_shape=[-1, num_classes])(
+                build_head_fn(feature, 9 * num_classes, "zeros"))
         )
 
     cls_outputs = tf.keras.layers.Concatenate(axis=1)(cls_outputs)

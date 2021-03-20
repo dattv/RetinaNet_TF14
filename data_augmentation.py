@@ -11,6 +11,24 @@ from utility import swap_xy
 from utility import convert_to_xywh
 
 
+def wraper(data):
+    """
+
+    :param image:
+    :param bboxes:
+    :return:
+    """
+    image, boxes = data
+
+    image = tf.image.flip_left_right(image)
+
+    boxes_list = tf.unstack(boxes, axis=-1)
+
+    boxes = tf.stack(
+        [640 - boxes_list[2], boxes_list[1], 640 - boxes_list[0], boxes_list[3]], axis=-1
+    )
+    return [image, boxes]
+
 def random_flip_horizontal(image, boxes, seed=None):
     """Flips image and boxes horizontally with 50% chance
 
@@ -23,25 +41,14 @@ def random_flip_horizontal(image, boxes, seed=None):
     Returns:
       Randomly flipped image and boxes
     """
-    def wraper(image, boxes):
-        """
-
-        :param image:
-        :param bboxes:
-        :return:
-        """
-        image = tf.image.flip_left_right(image)
-        boxes = tf.stack(
-            [1 - boxes[:, 2], boxes[:, 1], 1 - boxes[:, 0], boxes[:, 3]], axis=-1
-        )
-        return [image, boxes]
-
 
     generator_func = functools.partial(tf.random_uniform, [], seed=seed)
-    do_a_flip_random = tf.greater(generator_func(), 0.5)
-    [image, boxes] = tf.cond(do_a_flip_random, lambda: wraper(image, boxes), lambda: [image, boxes])
 
-    return image, boxes
+    do_a_flip_random = tf.greater(generator_func(), 0.5)
+    data = [image, boxes]
+    data = tf.cond(do_a_flip_random, lambda: wraper(data), lambda: data)
+
+    return data
 
 
 def resize_and_pad_image(
@@ -119,4 +126,60 @@ def preprocess_data(sample):
     sample["objects"]["bbox"] = bbox
     sample["objects"]["label"] = class_id
 
+    sample['image'] = distort_color(tf.cast(sample['image'], tf.float32))
+
     return sample
+
+
+def distort_color(image, color_ordering=0, fast_mode=True, scope=None):
+    """Distort the color of a Tensor image.
+
+    Each color distortion is non-commutative and thus ordering of the color ops
+    matters. Ideally we would randomly permute the ordering of the color ops.
+    Rather then adding that level of complication, we select a distinct ordering
+    of color ops for each preprocessing thread.
+
+    Args:
+      image: 3-D Tensor containing single image in [0, 255].
+      color_ordering: Python int, a type of distortion (valid values: 0-3).
+      fast_mode: Avoids slower ops (random_hue and random_contrast)
+      scope: Optional scope for name_scope.
+    Returns:
+      3-D Tensor color-distorted image on range [0, 1]
+    Raises:
+      ValueError: if color_ordering not in [0, 3]
+    """
+    with tf.name_scope(scope, 'distort_color', [image]):
+        if fast_mode:
+            if color_ordering == 0:
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
+                image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            else:
+                image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
+        else:
+            if color_ordering == 0:
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
+                image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+                image = tf.image.random_hue(image, max_delta=0.2)
+                image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+            elif color_ordering == 1:
+                image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
+                image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+                image = tf.image.random_hue(image, max_delta=0.2)
+            elif color_ordering == 2:
+                image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+                image = tf.image.random_hue(image, max_delta=0.2)
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
+                image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+            elif color_ordering == 3:
+                image = tf.image.random_hue(image, max_delta=0.2)
+                image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+                image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+                image = tf.image.random_brightness(image, max_delta=32. / 255.)
+            else:
+                raise ValueError('color_ordering must be in [0, 3]')
+
+        # The random_* ops do not necessarily clamp.
+        return tf.clip_by_value(image, 0., 255.)

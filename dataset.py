@@ -15,8 +15,8 @@ from encoding import wraper_encode
 from anchor_generator import AnchorBox
 
 MAXIMUM_OBJECTS = 100
-INPUT_RESOLUTION = {'height': 224,
-                    'width': 224}
+INPUT_RESOLUTION = {'height': 480,
+                    'width': 640}
 keras = tf.keras
 
 
@@ -48,6 +48,10 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
     :param label_encoder:
     :return:
     """
+    if config is not None:
+        INPUT_RESOLUTION['height'] = config['MODEL']['INPUT_HEIGHT']
+        INPUT_RESOLUTION['width'] = config['MODEL']['INPUT_WIDTH']
+
 
     def parse(feature):
         features = tf.io.parse_single_example(

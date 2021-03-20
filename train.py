@@ -30,6 +30,8 @@ def train(cfg=None):
     model_config = cfg['MODEL']
     solver_config = cfg['SOLVER']
 
+    n_classes = model_config['NUM_CLASSES']
+
 
     train_data_generator = data_input_pipeline(
         mode=tf.estimator.ModeKeys.TRAIN,
@@ -42,15 +44,27 @@ def train(cfg=None):
 
     retina_model = RetinaNet_fn(
         input_shape=[model_config['INPUT_HEIGHT'], model_config['INPUT_WIDTH'], 3],
-        back_bone=model_config['BACKBONE'], num_classes=90, training=True
+        back_bone=model_config['BACKBONE'], num_classes=n_classes, training=True
     )
 
     print(retina_model.summary())
+    tf.keras.utils.plot_model(retina_model, to_file='retina.png', show_shapes=True)
+
+    # in_np = np.random.random_sample(size=[2, 480, 640, 3]).astype(np.float32)
+    # out_np = retina_model(in_np)
+    # print(np.shape(out_np))
+
     retina_model.save('./{}.h5'.format(retina_model.name))
 
-    loss_fn = RetinaNetLoss(90)
+    loss_fn = RetinaNetLoss(num_classes=n_classes)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9)
+    learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
+    learning_rate_boundaries = [125., 250., 500., 240000., 360000.]
+    learning_rate_fn = tf.compat.v2.optimizers.schedules.PiecewiseConstantDecay(
+        boundaries=learning_rate_boundaries, values=learning_rates
+    )
+
+    optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
     retina_model.compile(loss=loss_fn, optimizer=optimizer)
 
     callbacks_list = [
