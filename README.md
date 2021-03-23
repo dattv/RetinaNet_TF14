@@ -19,3 +19,5 @@ Use tfrecord coco2017
 
 
 # Model
+
+![](https://github.com/dattv/RetinaNet_TF14/blob/main/test_dataset_results/model.png)
