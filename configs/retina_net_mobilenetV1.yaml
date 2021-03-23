@@ -31,5 +31,5 @@ SOLVER:
   OPTIMIZING_METHOD: sgd
 NUM_GPUS: 1
 DATASET_DIR: /media/dat/68fa98f8-9d03-4c1e-9bdb-c71ea72ab6fa/dat/dataset/COCO_2
-OUTPUT_DIR: ./output/mobilenetv1
-LOGS_DIR: ./logs/mobilenetv1
+OUTPUT_DIR: ./output/retina_mobilenetv1
+LOGS_DIR: ./logs/retina_mobilenetv1

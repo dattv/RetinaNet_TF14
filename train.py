@@ -6,7 +6,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
-
+from datetime import datetime
 import tensorflow as tf
 import numpy as np
 from nets import RetinaNet_fn
@@ -63,6 +63,7 @@ def train(cfg=None):
     optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
     retina_model.compile(loss=loss_fn, optimizer=optimizer)
 
+    logdir = os.path.join(config['LOGS_DIR'], datetime.now().strftime("%Y%m%d-%H%M%S"))
     callbacks_list = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath=os.path.join(cfg['OUTPUT_DIR'], "weights" + "_epoch_{epoch}"),
@@ -70,7 +71,10 @@ def train(cfg=None):
             save_best_only=False,
             save_weights_only=True,
             verbose=1,
-        )
+        ),
+        tf.keras.callbacks.TensorBoard(
+            log_dir=logdir, write_images=True, profile_batch=10
+        ),
     ]
 
     retina_model.fit(
