@@ -16,6 +16,7 @@ from encoding import LabelEncoder
 from losser import RetinaNetLoss
 import yaml
 
+
 def train(cfg=None):
     """
 
@@ -31,7 +32,6 @@ def train(cfg=None):
     solver_config = cfg['SOLVER']
 
     n_classes = model_config['NUM_CLASSES']
-
 
     train_data_generator = data_input_pipeline(
         mode=tf.estimator.ModeKeys.TRAIN,
@@ -49,10 +49,6 @@ def train(cfg=None):
 
     print(retina_model.summary())
     tf.keras.utils.plot_model(retina_model, to_file='retina.png', show_shapes=True)
-
-    # in_np = np.random.random_sample(size=[2, 480, 640, 3]).astype(np.float32)
-    # out_np = retina_model(in_np)
-    # print(np.shape(out_np))
 
     retina_model.save('./{}.h5'.format(retina_model.name))
 
@@ -79,10 +75,10 @@ def train(cfg=None):
 
     retina_model.fit(
         train_data_generator,
-        epochs=10,
+        epochs=train_config['N_EPOCH'],
         callbacks=callbacks_list,
         verbose=1,
-        steps_per_epoch=1000
+        steps_per_epoch=118200 // train_config['BATCH_SIZE']
     )
 
 

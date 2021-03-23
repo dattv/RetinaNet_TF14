@@ -86,13 +86,11 @@ class RetinaNetLoss(tf.keras.losses.Loss):
         positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
         ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
 
-        # sum_possitive_mask = tf.reduce_sum(positive_mask)
-        # sum_possitive_mask = tf.Print(sum_possitive_mask, [sum_possitive_mask], message='sum_possitive_mask')
-
-        # sum_ignore_mask = tf.reduce_sum(ignore_mask)
-        # sum_ignore_mask = tf.Print(sum_ignore_mask, [sum_ignore_mask], message='sum_ignore_mask')
-
         clf_loss = self._clf_loss(cls_labels, cls_predictions)
+
+        pos_box_mask = tf.tile(tf.expand_dims(positive_mask, axis=-1), [1, 1, 4])
+        box_labels = tf.where(tf.equal(pos_box_mask, tf.ones_like(pos_box_mask)), box_labels, tf.zeros_like(box_labels))
+        box_predictions = tf.where(tf.equal(pos_box_mask, tf.ones_like(pos_box_mask)), box_predictions, tf.zeros_like(box_predictions))
         box_loss = self._box_loss(box_labels, box_predictions)
 
         clf_loss = tf.where(tf.equal(ignore_mask, tf.ones_like(ignore_mask)), tf.zeros_like(clf_loss), clf_loss)
@@ -100,10 +98,9 @@ class RetinaNetLoss(tf.keras.losses.Loss):
         box_loss = tf.where(tf.equal(positive_mask, tf.ones_like(positive_mask)), box_loss, tf.zeros_like(positive_mask))
 
         normalizer = tf.reduce_sum(positive_mask, axis=-1)
-        # normalizer = tf.Print(normalizer, [normalizer], message='normalizer')
-        clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
+
+        clf_loss = tf.reduce_mean(clf_loss, axis=-1)
         box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
-        clf_loss = tf.Print(clf_loss, [clf_loss], message='clf_loss')
-        box_loss = tf.Print(box_loss, [box_loss], message='box_loss')
+
         loss = clf_loss + box_loss
         return loss
