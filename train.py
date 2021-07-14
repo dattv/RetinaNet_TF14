@@ -28,6 +28,7 @@ def train(cfg=None):
     log_dir = cfg['LOGS_DIR']
 
     train_config = cfg['TRAIN']
+    test_config = cfg['TEST']
     model_config = cfg['MODEL']
     solver_config = cfg['SOLVER']
 
@@ -40,6 +41,14 @@ def train(cfg=None):
         batch_size=train_config['BATCH_SIZE'],
         label_encoder=LabelEncoder,
         config=cfg
+    )
+
+    test_data_generator = data_input_pipeline(
+        mode=tf.estimator.ModeKeys.EVAL,
+        dataset_dir=dataset_dir,
+        batch_size=test_config['BATCH_SIZE'],
+        label_encoder=LabelEncoder,
+        config=config
     )
 
     retina_model = RetinaNet_fn(
@@ -82,7 +91,8 @@ def train(cfg=None):
         epochs=train_config['N_EPOCH'],
         callbacks=callbacks_list,
         verbose=1,
-        steps_per_epoch=118200 // train_config['BATCH_SIZE']
+        steps_per_epoch=118200 // train_config['BATCH_SIZE'],
+        validation_data=test_data_generator.take(50)
     )
 
 

@@ -69,6 +69,7 @@ class test_dataset(unittest.TestCase):
                     label = labels[i]
 
                     bbox = label[:, :4]
+
                     cls = label[:, 4]
 
                     id = cls >= 0

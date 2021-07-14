@@ -111,7 +111,8 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
             ], axis=-1
         )
 
-        image, size_ratio = resize_img_keeping_ar(image, target_height=INPUT_RESOLUTION['height'],
+
+        image, size_ratio, new_shape = resize_img_keeping_ar(image, target_height=INPUT_RESOLUTION['height'],
                                                   target_width=INPUT_RESOLUTION['width'])
 
         image_id = features['image/object/class/text']
@@ -141,6 +142,7 @@ def data_input_pipeline(mode=tf.estimator.ModeKeys.TRAIN,
             'image': image,
             'height': image_height,
             'width': image_width,
+            'new_shape': new_shape,
             'image_id': image_id,
             'filename': image_name,
             'source_id': source_id,

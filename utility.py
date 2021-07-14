@@ -162,4 +162,4 @@ def resize_img_keeping_ar(img_tf, target_height, target_width):
     img_tf = tf.pad(img_tf, [[0, pad_number[0]], [0, pad_number[1]], [0, 0]])
 
 
-    return tf.cast(img_tf, dtype=tf.uint8), size_ratio
+    return tf.cast(img_tf, dtype=tf.uint8), size_ratio, tf.cast(new_img_shape, tf.float32)

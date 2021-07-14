@@ -11,7 +11,7 @@ from utility import swap_xy
 from utility import convert_to_xywh
 
 
-def wraper(data):
+def wraper(data, new_shape):
     """
 
     :param image:
@@ -25,11 +25,11 @@ def wraper(data):
     boxes_list = tf.unstack(boxes, axis=-1)
 
     boxes = tf.stack(
-        [640 - boxes_list[2], boxes_list[1], 640 - boxes_list[0], boxes_list[3]], axis=-1
+        [new_shape[1] - boxes_list[2], boxes_list[1], new_shape[1] - boxes_list[0], boxes_list[3]], axis=-1
     )
     return [image, boxes]
 
-def random_flip_horizontal(image, boxes, seed=None):
+def random_flip_horizontal(image, boxes, new_shape, seed=None):
     """Flips image and boxes horizontally with 50% chance
 
     Arguments:
@@ -46,7 +46,7 @@ def random_flip_horizontal(image, boxes, seed=None):
 
     do_a_flip_random = tf.greater(generator_func(), 0.5)
     data = [image, boxes]
-    data = tf.cond(do_a_flip_random, lambda: wraper(data), lambda: data)
+    data = tf.cond(do_a_flip_random, lambda: wraper(data, new_shape), lambda: data)
 
     return data
 
@@ -115,11 +115,11 @@ def preprocess_data(sample):
       class_id: An tensor representing the class id of the objects, having
         shape `(num_objects,)`.
     """
-
+    new_shape = sample["new_shape"]
     bbox = swap_xy(sample["objects"]["bbox"])
     class_id = tf.cast(sample["objects"]["label"], dtype=tf.int32)
 
-    sample["image"], bbox = random_flip_horizontal(sample["image"], bbox)
+    sample["image"], bbox = random_flip_horizontal(sample["image"], bbox, new_shape)
 
     bbox = convert_to_xywh(bbox)
 

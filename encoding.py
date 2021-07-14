@@ -183,6 +183,8 @@ def _match_anchor_boxes(
 
 def encode_sample(_box_variance, anchor_boxes, gt_boxes, cls_ids):
     """
+    1. convert class number to float
+    2.
 
     :param image_shape:
     :param gt_boxes:
